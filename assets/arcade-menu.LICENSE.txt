@@ -1,0 +1,8 @@
+Arcade — Arcade Loop
+Creator: Colorosse
+License: CC0-1.0 public-domain dedication, as declared by the publisher.
+Source: https://colorosse.com/assets/audio/music/arcade-music-loop
+License terms: https://creativecommons.org/publicdomain/zero/1.0/
+Verified: 2026-10-28
+SHA-256 (unmodified WAV): b50e788834ffabd9ef96f3a2d5721fc6220d25595031232592aa016febae295f
+No attribution required by CC0. Source retained for provenance.

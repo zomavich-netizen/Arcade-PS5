@@ -1,0 +1,99 @@
+--- a/scripts/src/main.lua
++++ b/scripts/src/main.lua
+@@ -165,7 +165,7 @@
+ end
+ 	-- BEGIN libretro overrides to MAME's GENie build
+ 	configuration { "libretro*" }
+-		kind "SharedLib"	
++		kind "StaticLib"	
+ 		targetsuffix "_libretro"
+ 		if _OPTIONS["targetos"]=="android" then
+ 			targetsuffix "_libretro_android"
+--- a/3rdparty/lzma/C/AesOpt.c
++++ b/3rdparty/lzma/C/AesOpt.c
+@@ -37,6 +37,11 @@
+     #endif
+   #endif
+ 
++#ifdef __PROSPERO__
++/* PS5 Zen 2 has AES-NI, not VAES; use the upstream AES/software fallback. */
++#undef USE_INTEL_VAES
++#endif
++
+ #ifndef ATTRIB_AES
+   #define ATTRIB_AES
+ #endif
+--- a/src/osd/libretro/libretro-internal/retro_init.cpp
++++ b/src/osd/libretro/libretro-internal/retro_init.cpp
+@@ -587,8 +587,8 @@
+    Add_Option((char*)"-rompath");
+ 
+    if (retro_system_directory)
+-      snprintf(tmp_dir, sizeof(tmp_dir), "%s;%s%c%s%c%s;%s%c%s%c%s",
+-            g_rom_dir,
++      snprintf(tmp_dir, sizeof(tmp_dir), "%s;%s%c..%cbios;%s%c%s%c%s;%s%c%s%c%s",
++            g_rom_dir, g_rom_dir, slash, slash,
+             retro_system_directory, slash, CORE_NAME, slash, "bios",
+             retro_system_directory, slash, CORE_NAME, slash, "roms");
+    else
+--- a/src/mame/mame.lst
++++ b/src/mame/mame.lst
+@@ -16921,7 +16921,7 @@
+ @source:cave/cavepc.cpp
+ deathsm2
+ 
+-@source:misc/cv1k.cpp
++@source:cave/cv1k.cpp
+ akatana
+ ddpdfk
+ ddpdfk10
+@@ -30550,7 +30550,7 @@
+ tsarevna
+ tsarevnaa
+ 
+-@source:misc/cv1k.cpp
++@source:cave/cv1k.cpp
+ akatana                         // (c) 2010 Cave (AMI license) - 2010/ 8/13 MASTER VER.
+ ddpdfk                          // (c) 2008 Cave (AMI license) - 2008/06/23  MASTER VER 1.5
+ ddpdfk10                        // (c) 2008 Cave (AMI license) - 2008/05/16  MASTER VER
+--- a/scripts/src/video_retro.lua
++++ b/scripts/src/video_retro.lua
+@@ -1,5 +1,5 @@
+ -- cv1k subtarget hack
+-if _OPTIONS["subtarget"]=="arcade" then
++if _OPTIONS["subtarget"]=="arcade" or _OPTIONS["subtarget"]=="arcade_all" then
+ 	files {
+ 		MAME_DIR .. "src/mame/cave/cv1k_v_blit0.cpp",
+ 		MAME_DIR .. "src/mame/cave/cv1k_v_blit1.cpp",
+--- a/src/osd/libretro/libretro-internal/libretro.cpp
++++ b/src/osd/libretro/libretro-internal/libretro.cpp
+@@ -1156,3 +1156,29 @@
+ {
+    draw_this_frame = enable;
+ }
++
++// Arcade frontend extension: defer queued coins until firmware unlocks the slot.
++extern "C" int arcade_mame_coin_lockout(unsigned slot)
++{
++   auto *manager = mame_machine_manager::instance();
++   if (!manager || !manager->machine()) return -1;
++   return manager->machine()->bookkeeping().coin_lockout_get_state(slot);
++}
++
++// Neo Geo has a firmware-driven coin meter: confirm acceptance, not just input.
++extern "C" int arcade_mame_coin_counter(unsigned slot)
++{
++   auto *manager = mame_machine_manager::instance();
++   if (!manager || !manager->machine()) return -1;
++   auto *machine = manager->machine();
++   const game_driver *system = &machine->system();
++   for (unsigned depth = 0; depth < 8; ++depth)
++   {
++      if (strcmp(system->name, "neogeo") == 0)
++         return machine->bookkeeping().coin_counter_get_count(slot);
++      int parent = driver_list::find(system->parent);
++      if (parent < 0) break;
++      system = &driver_list::driver(parent);
++   }
++   return -1;
++}

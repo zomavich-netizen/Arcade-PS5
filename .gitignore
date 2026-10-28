@@ -1,0 +1,11 @@
+build/
+.local/
+.DS_Store
+
+.deps/
+
+# Local caches, editor preferences, and raw preview captures
+__pycache__/
+*.py[cod]
+*.ppm
+.vscode/

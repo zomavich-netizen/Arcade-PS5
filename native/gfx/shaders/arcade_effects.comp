@@ -1,0 +1,21 @@
+#version 450
+layout(local_size_x=8,local_size_y=8) in;
+layout(set=0,binding=0,std430) readonly buffer InputPixels {uint pixels[];} input_frame;
+layout(set=0,binding=1,std430) writeonly buffer OutputPixels {uint pixels[];} output_frame;
+layout(push_constant) uniform Options {uint width;uint height;uint out_width;uint out_height;float aspect;uint effect;uint flags;uint reserved;} options;
+vec3 read_pixel(ivec2 point){point=clamp(point,ivec2(0),ivec2(options.width,options.height)-1);uint p=input_frame.pixels[point.y*options.width+point.x];return vec3((p>>16)&255u,(p>>8)&255u,p&255u)/255.0;}
+void main(){uvec2 p=gl_GlobalInvocationID.xy;uvec2 size=uvec2(options.out_width,options.out_height);if(any(greaterThanEqual(p,size)))return;
+ uint rotation=(options.flags>>10)&3u,scaling=(options.flags>>12)&3u;float aspect=options.aspect>0.?options.aspect:float(options.width)/float(options.height);if((rotation&1u)!=0u)aspect=1./aspect;
+ vec2 viewport=vec2(size);if(scaling!=2u){float w=min(float(size.x),float(size.y)*aspect);viewport=vec2(w,w/aspect);if(scaling==1u){vec2 raw=(rotation&1u)!=0u?vec2(options.height,options.width):vec2(options.width,options.height);float factor=floor(min(float(size.x)/raw.x,float(size.y)/raw.y));if(factor>=1.)viewport=raw*factor;}}
+ vec2 uv=(vec2(p)+.5-(vec2(size)-viewport)*.5)/viewport;uint index=p.y*size.x+p.x;
+ if(any(lessThan(uv,vec2(0)))||any(greaterThanEqual(uv,vec2(1)))){output_frame.pixels[index]=0xff000000u;return;}
+ if(rotation==1u)uv=vec2(uv.y,1.-uv.x);else if(rotation==2u)uv=vec2(1.-uv.x,1.-uv.y);else if(rotation==3u)uv=vec2(1.-uv.y,uv.x);
+ vec2 source=uv*vec2(options.width,options.height)-.5;ivec2 at=ivec2(floor(source));vec3 color;
+ if((options.flags&256u)!=0u){vec2 f=fract(source);color=mix(mix(read_pixel(at),read_pixel(at+ivec2(1,0)),f.x),mix(read_pixel(at+ivec2(0,1)),read_pixel(at+ivec2(1,1)),f.x),f.y);}else color=read_pixel(ivec2(floor(source+.5)));
+ uint effect=options.effect;
+ if(effect==1u||effect==2u)color*=.88+.12*cos(uv.y*float(options.height)*6.2831853);
+ if(effect==2u||effect==5u){uint channel=p.x%3u;color*=vec3(channel==0u?1.:.87,channel==1u?1.:.87,channel==2u?1.:.87);}
+ if(effect==2u){vec2 edge=uv*2.-1.;color*=1.-.13*dot(edge,edge);}
+ if(effect==3u||effect==4u){vec3 glow=vec3(0);for(int y=-1;y<=1;++y)for(int x=-1;x<=1;++x)glow+=read_pixel(at+ivec2(x,y));glow/=9.;color=effect==3u?color+max(glow-.32,vec3(0))*.45:mix(color,glow,.22)*vec3(.92,1.04,.94);}
+ uvec3 rgb=uvec3(round(clamp(color,0.,1.)*255.));output_frame.pixels[index]=0xff000000u|(rgb.r<<16)|(rgb.g<<8)|rgb.b;
+}

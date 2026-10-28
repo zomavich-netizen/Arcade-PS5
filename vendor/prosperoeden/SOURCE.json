@@ -1,0 +1,22 @@
+{
+  "source": "https://github.com/Swordpdf/ProsperoEden",
+  "archive_sha256": "6d3ffcd59e4e461d494be1ca7cd213ece425265e0e85ebbf37b4b9bfa2dace71",
+  "license": "GPL-3.0-or-later",
+  "modifications": [
+    "radio_input: expose gameplay snapshots from the same owned controller samples used by the menu; invalidate on read errors and shutdown",
+    "EGL display: allow 60/120 Hz request supplied by settings",
+    "Settings UX: adapted category and detail structure; only functional arcade settings retained",
+    "RADV namespace isolation and display lifetime adaptation retained under tools/"
+  ],
+  "files": {
+    "LICENSE": "3972dc9744f6499f0f9b2dbf76696f2ae7ad8af9b23dde66d6af86c9dfb36986",
+    "radio_input.c": "d20b48895867a9ce9e6d70d45d032c67e31ba251934028fbc822cba0ce2847b2",
+    "radio_input.h": "ead485cd0f835c3265fa79fe2a97ba59b3403e611f0615aec3ec0f9e789fd3bb",
+    "pe/core/log.hpp": "37e997d8d69c2d9f8e029c469203cdf0fe0b0ec8087efe2db63f7a9f3ccb779d",
+    "pe/platform/display_egl.cpp": "ef7ff7235a637ef708eecab80dd9dbf5a29af029847f7ba6bc485199e8acd5a7",
+    "pe/platform/display_egl.hpp": "abb27a0a22e39d2be58c0bc8316c4e60df7f012d4ef56a2821c9efd39f763b23",
+    "runtime_shims.cpp": "69aedafda8859fe134e57411713897390185f135343c17506d54fb9819d900c8",
+    "pe/ui/runtime_filesystem.hpp": "c3b58535a3c0ed393fdaf1abd53ce33405d67b9d82f794eaf8387886be7c02fe",
+    "stubs/libSceAgcDriver.c": "3fd6d85c64b37c471ae9d368f7746e6fab2682bb51d19a7e5b906a66c003752d"
+  }
+}
